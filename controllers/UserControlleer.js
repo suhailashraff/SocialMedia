@@ -1,4 +1,4 @@
-const User = require("../modals/userModal");
+const User = require("../models/userModal");
 const crypto = require("crypto");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");

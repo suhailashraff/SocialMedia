@@ -1,41 +1,53 @@
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const Comment = require("../modals/commentModal");
-const mongoose = require("mongoose");
+const Comment = require("../models/commentModal");
+const Post = require("../models/PostModal");
 
-exports.createcomment = catchAsync(async (req, res, next) => {
-  const author = req.user.id;
+exports.createComment = catchAsync(async (req, res, next) => {
   const text = req.body.text;
   const postId = req.params.postId;
+  const author = req.user.id;
+
+  console.log(text, postId, author);
 
   const comment = await Comment.create({ author, text, postId });
+
+  console.log(comment);
+  const post = await Post.findByIdAndUpdate(
+    postId,
+    {
+      $push: { comments: comment._id },
+    },
+    { new: true }
+  );
+
   return res.status(201).json({
     status: "Success",
-    Message: "Comment Created",
+    message: "Comment Created",
     comment,
+    post,
   });
 });
 
-exports.deletebyId = catchAsync(async (req, res, next) => {
+exports.deleteById = catchAsync(async (req, res, next) => {
   const commentId = req.params.commentId;
-  const deletedcomment = await Comment.findByIdAndDelete(commentId);
-  if (!deletedcomment) {
+  const deletedComment = await Comment.findByIdAndDelete(commentId);
+  if (!deletedComment) {
     return next(new AppError("No comment found with that ID", 404));
   }
 
   return res.status(204).json({
-    Status: "Success",
-    deletedcomment,
+    status: "Success",
+    message: "Comment deleted successfully",
   });
 });
-exports.GetAllCommentsbyPostId = catchAsync(async (req, res, next) => {
+
+exports.getAllCommentsByPostId = catchAsync(async (req, res, next) => {
   const postId = req.params.postId;
 
-  const comments = await Comment.findById(postId);
+  const comments = await Comment.find({ postId });
   return res.status(200).json({
-    Status: "Success",
-    comment: comments,
+    status: "Success",
+    comments,
   });
 });
-
-module.exports;
