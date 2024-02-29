@@ -27,6 +27,7 @@ exports.deletePost = catchAsync(async (req, res, next) => {
       message: "There is no Post related to this ID",
     });
   }
+  if (deletedpost.author === req.user.author)
   return res.status(204).json({
     status: "success",
     message: "Post deleted Successfully",
