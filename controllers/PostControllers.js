@@ -3,9 +3,13 @@ const Post = require("../database/modals/PostModal");
 const AppError = require("../utils/appError");
 
 exports.createPost = catchAsync(async (req, res, next) => {
-  const { text } = req.body;
+  const images = req.files.map((file) => file.path);
   const authorId = req.user.id;
-  const newpost = await Post.create({ author: authorId, text: text });
+  const newpost = await Post.create({
+    ...req.body,
+    author: authorId,
+    images: images,
+  });
   return res.status(201).json({
     status: "success",
     data: {

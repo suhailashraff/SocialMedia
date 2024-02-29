@@ -3,8 +3,14 @@ const router = express.Router();
 
 const authController = require("../controllers/authController");
 const postcontroller = require("../controllers/PostControllers");
+const uploadUsingMulter = require("../utils/uploadUsingMulter");
 
-router.post("/createpost", authController.protect, postcontroller.createPost);
+router.post(
+  "/createpost",
+  authController.protect,
+  uploadUsingMulter.uploadPostPhotos,
+  postcontroller.createPost
+);
 router.delete(
   "/deletepost/:id",
   authController.protect,
