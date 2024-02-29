@@ -1,22 +1,27 @@
 const express = require("express");
 const router = express.Router();
+
 const authController = require("../controllers/authController");
-const postController = require("../controllers/PostControllers");
+const postcontroller = require("../controllers/PostControllers");
+const uploadUsingMulter = require("../utils/uploadUsingMulter");
 
-router.use(authController.protect);
+router.post(
+  "/createpost",
+  authController.protect,
+  uploadUsingMulter.uploadPostPhotos,
+  postcontroller.createPost
+);
+router.delete(
+  "/deletepost/:id",
+  authController.protect,
+  postcontroller.deletePost
+);
 
-router.route("/createpost").post(postController.createPost);
-
-router.route("/deletepost/:id").delete(postController.deletePost);
-
-router.route("/getAllPosts").get(postController.getAllPosts);
-
-router.route("/updatePost/:id").patch(postController.updatePost);
-
-router.route("/getMyPosts").get(postController.getMyPosts);
-
-router.route("/likePost/:id").post(postController.likePost);
-
-router.route("/dislikePost/:id").post(postController.dislikePost);
-
+router.get("/getAllPosts", authController.protect, postcontroller.getAllPosts);
+router.patch(
+  "/updatePost/:id",
+  authController.protect,
+  postcontroller.updatePost
+);
+router.get("/getMyPosts", authController.protect, postcontroller.getMyPosts);
 module.exports = router;

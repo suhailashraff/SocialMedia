@@ -39,10 +39,6 @@ const filterObj = (obj, ...allowedfields) => {
   return newObj;
 };
 
-// exports.home = catchAsync(async (req, res, next) => {
-//   return res.status(200).render("api/v1/login");
-// });
-
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   const users = await User.find();
   res.status(200).json({
@@ -54,7 +50,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 });
 
 exports.signup = catchAsync(async (req, res, next) => {
-  const newUser = await User.create(req.body);
+  const newUser = await User.create({ ...req.body, photo: req.file.path });
 
   const token = signToken(newUser._id);
   const cookieOptions = {
@@ -69,7 +65,13 @@ exports.signup = catchAsync(async (req, res, next) => {
 
   newUser.password = undefined;
 
-  res.status(201).render("signup");
+  res.status(201).json({
+    status: "success",
+    token,
+    data: {
+      user: newUser,
+    },
+  });
 });
 
 exports.getUser = catchAsync(async (req, res, next) => {
@@ -86,7 +88,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.password) {
     return next(
       new AppError(
-        "This route is not for password updates. please use updatePassword",
+        "this route is not for password updates. please use updatePassword",
         400
       )
     );
@@ -129,8 +131,7 @@ exports.loginUser = catchAsync(async (req, res, next) => {
   const token = signToken(user._id);
 
   res.status(200).json({
-    status: "Success",
-    message: "You are Logged In",
+    status: "success",
     token,
   });
 });

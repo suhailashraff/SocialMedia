@@ -4,9 +4,13 @@ const app = require("../app");
 
 const userController = require("../controllers/UserControlleer");
 const authController = require("../controllers/authController");
-// const Middlewares = require("../middleware/middleware");
+const uploadUsingMulter = require("../utils/uploadUsingMulter");
 
-router.post("/signup", userController.signup);
+router.post(
+  "/signup",
+  uploadUsingMulter.uploadUserPhotos,
+  userController.signup
+);
 // router.get("/getAllUsers", userController.getAllUsers);
 router.get("/getuser", authController.protect, userController.getUser);
 router.patch(
