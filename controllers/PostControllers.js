@@ -10,7 +10,11 @@ exports.createPost = catchAsync(async (req, res, next) => {
   }
   const { text } = req.body;
   const authorId = req.user.id;
-  const newpost = await Post.create({ author: authorId, text: text });
+  const newpost = await Post.create({
+    ...req.body,
+    author: authorId,
+    images: images,
+  });
   return res.status(201).json({
     status: "success",
     data: {
@@ -27,10 +31,11 @@ exports.deletePost = catchAsync(async (req, res, next) => {
       message: "There is no Post related to this ID",
     });
   }
-  return res.status(204).json({
-    status: "success",
-    message: "Post deleted Successfully",
-  });
+  if (deletedpost.author === req.user.author)
+    return res.status(204).json({
+      status: "success",
+      message: "Post deleted Successfully",
+    });
 });
 
 exports.getAllPosts = catchAsync(async (req, res, next) => {

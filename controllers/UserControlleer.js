@@ -50,7 +50,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 });
 
 exports.signup = catchAsync(async (req, res, next) => {
-  const newUser = await User.create(req.body);
+  const newUser = await User.create({ ...req.body, photo: req.file.path });
 
   const token = signToken(newUser._id);
   const cookieOptions = {
