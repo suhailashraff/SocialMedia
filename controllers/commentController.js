@@ -8,8 +8,6 @@ exports.createComment = catchAsync(async (req, res, next) => {
   const postId = req.params.postId;
   const author = req.user.id;
 
-  console.log(text, postId, author);
-
   const comment = await Comment.create({ author, text, postId });
 
   console.log(comment);

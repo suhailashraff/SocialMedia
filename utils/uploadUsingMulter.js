@@ -41,4 +41,4 @@ const uploadPost = multer({
   fileFilter: multerFilter,
 });
 
-exports.uploadPostPhotos = uploadPost.array("images", 10);
+exports.uploadPostPhotos = uploadPost.array("image", 10);

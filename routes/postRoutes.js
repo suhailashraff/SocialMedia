@@ -21,6 +21,7 @@ router.get("/getAllPosts", authController.protect, postcontroller.getAllPosts);
 router.patch(
   "/updatePost/:id",
   authController.protect,
+  uploadUsingMulter.uploadPostPhotos,
   postcontroller.updatePost
 );
 router.get("/getMyPosts", authController.protect, postcontroller.getMyPosts);

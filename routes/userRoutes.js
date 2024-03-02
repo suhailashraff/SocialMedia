@@ -11,14 +11,11 @@ router.post(
   uploadUsingMulter.uploadUserPhotos,
   userController.signup
 );
+router.post("/verifyOtp/:otp", userController.verifyOtp);
+
 // router.get("/getAllUsers", userController.getAllUsers);
 router.get("/getuser", authController.protect, userController.getUser);
-router.patch(
-  "/updateUser",
-  authController.protect,
-  userController.uploadUserPhotos,
-  userController.updateUser
-);
+router.patch("/updateUser", authController.protect, userController.updateUser);
 // router.get("/", Middlewares.requireLogin, userController.home);
 router.delete("/deleteUser", authController.protect, userController.deleteUser);
 router.post("/login", userController.loginUser);
