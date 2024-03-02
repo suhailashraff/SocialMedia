@@ -77,7 +77,11 @@ exports.getAllPosts = catchAsync(async (req, res, next) => {
       },
       populate: {
         path: "replyId",
-        select: "text", // Exclude _id field for comment authors
+        select: "-_id text author",
+        populate: {
+          path: "author",
+          select: "-_id name",
+        },
       },
     })
     .select("text likes dislikes comments"); // Exclude _id field from the query results
