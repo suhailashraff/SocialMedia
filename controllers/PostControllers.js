@@ -70,10 +70,14 @@ exports.getAllPosts = catchAsync(async (req, res, next) => {
     })
     .populate({
       path: "comments",
-      select: "text createdAt author", // Select only the text, createdAt, and author fields of comments
+      select: "text createdAt author replyId", // Select only the text, createdAt, and author fields of comments
       populate: {
         path: "author",
         select: "name", // Exclude _id field for comment authors
+      },
+      populate: {
+        path: "replyId",
+        select: "text", // Exclude _id field for comment authors
       },
     })
     .select("text likes dislikes comments"); // Exclude _id field from the query results

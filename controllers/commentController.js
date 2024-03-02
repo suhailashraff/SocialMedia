@@ -36,9 +36,9 @@ exports.deleteById = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllCommentsByPostId = catchAsync(async (req, res, next) => {
-  const postId = req.params.postId;
+  const postId = req.params.id;
 
-  const comments = await Comment.find({ postId });
+  const comments = await Comment.find({ postId: postId });
   return res.status(200).json({
     status: "Success",
     comments,

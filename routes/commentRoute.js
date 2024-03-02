@@ -10,10 +10,12 @@ router.post("/createcomment/:postId", commentController.createComment);
 
 router.delete("/deletebyId/:commentId", commentController.deleteById);
 
-router.get("/CommentsbyPostId", commentController.getAllCommentsByPostId);
+router.get("/CommentsbyPostId/:id", commentController.getAllCommentsByPostId);
 
 router.patch("/updateComment/:id", commentController.updateComment);
 
-router.patch("/reply/:id", commentController.replyOnComment);
+router.post("/commentbyId/:postId", commentController.createComment);
+
+router.post("/reply/:id", commentController.replyOnComment);
 
 module.exports = router;
