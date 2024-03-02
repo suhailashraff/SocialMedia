@@ -23,34 +23,50 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
   });
 });
 
-let signupData;
+let userData;
+
 let otp;
 
 exports.signup = catchAsync(async (req, res, next) => {
-  signupData = req.body;
+  userData = req.body;
+  const newUser = new User(userData);
+  try {
+    await newUser.validate();
+  } catch (error) {
+    return res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
   if (req.file) {
-    signupData = { ...req.body, photo: req.file.path };
+    userData.photo = req.file.path;
   }
 
-  // const newUser = new User.validate(req.body);
+  const user = await User.findOne({ email: req.body.email });
+  if (user) {
+    return res.status(401).json({
+      status: "fail",
+      message: "User already exists with this email",
+    });
+  }
 
   otp = Math.floor(1000 + Math.random() * 9000).toString();
-
-  const message = `your one time registration code is "${otp}"`;
+  const message = `Your one time registration code is "${otp}"`;
   await sendEmail({
     email: req.body.email,
-    subject: "your otp is valid for 10 min",
+    subject: "Your OTP is valid for 10 minutes",
     message,
   });
+
   res.status(201).json({
     status: "success",
-    message: "otp sent successfully",
+    message: "OTP sent successfully",
   });
 });
 
 exports.verifyOtp = catchAsync(async (req, res, next) => {
   if (req.params.otp === otp) {
-    const newUser = await User.create(signupData);
+    const newUser = await User.create(userData);
 
     const token = signToken(newUser._id);
     const cookieOptions = {
@@ -74,7 +90,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
     });
   } else {
     res.status(201).json({
-      status: "success",
+      status: "Fail",
       message: "otp mismatch",
     });
   }
@@ -99,7 +115,13 @@ exports.updateUser = catchAsync(async (req, res, next) => {
       )
     );
   }
-  const filteredbody = filterObj(req.body, "name", "email", "address");
+  const filteredbody = filterObj(
+    req.body,
+    "name",
+    "email",
+    "address",
+    "isPublic"
+  );
 
   const user = await User.findByIdAndUpdate(req.user.id, filteredbody, {
     new: true,

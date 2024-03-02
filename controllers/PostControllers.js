@@ -5,6 +5,7 @@ const unlinkAsync = promisify(fs.unlink);
 const Post = require("../models/PostModal");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const User = require("../models/userModal");
 
 exports.createPost = catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
@@ -59,7 +60,10 @@ exports.deletePost = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllPosts = catchAsync(async (req, res, next) => {
-  const allPosts = await Post.find()
+  const userWithPublicAccount = await User.find({ isPublic: true });
+  const publicUserIds = userWithPublicAccount.map((user) => user._id);
+
+  const allPosts = await Post.find({ author: { $in: publicUserIds } })
     .populate({
       path: "author",
       select: "name", // Exclude _id field for the author
