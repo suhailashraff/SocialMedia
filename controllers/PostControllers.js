@@ -8,12 +8,13 @@ exports.createPost = catchAsync(async (req, res, next) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ status: "fail", errors: errors.array() });
   }
-  const { text } = req.body;
+  const { images, text } = req.body;
   const authorId = req.user.id;
   const newpost = await Post.create({
     ...req.body,
     author: authorId,
     images: images,
+    text,
   });
   return res.status(201).json({
     status: "success",
@@ -106,7 +107,6 @@ exports.getMyPosts = catchAsync(async (req, res, next) => {
 exports.likePost = catchAsync(async (req, res, next) => {
   const postId = req.params.id;
   console.log(postId);
-  //const post = await Post.findOne({ _id: postId });
   const post = await Post.findById(postId);
 
   if (!post) {

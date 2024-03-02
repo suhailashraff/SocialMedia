@@ -24,4 +24,11 @@ router.patch(
   postcontroller.updatePost
 );
 router.get("/getMyPosts", authController.protect, postcontroller.getMyPosts);
+
+router.post("/likepost/:id", authController.protect, postcontroller.likePost);
+router.post(
+  "/dislikepost/:id",
+  authController.protect,
+  postcontroller.dislikePost
+);
 module.exports = router;

@@ -31,6 +31,9 @@ const usersSchema = new mongoose.Schema({
     required: true,
     select: false,
   },
+  phoneNumber: {
+    type: String,
+  },
   passwordConfirm: {
     type: String,
     required: true,

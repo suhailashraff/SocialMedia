@@ -7,17 +7,10 @@ exports.createComment = catchAsync(async (req, res, next) => {
   const text = req.body.text;
   const postId = req.params.postId;
   const author = req.user.id;
-
-  console.log(text, postId, author);
-
   const comment = await Comment.create({ author, text, postId });
-
-  console.log(comment);
-  const post = await Post.findByIdAndUpdate(
+  const updatedPost = await Post.findByIdAndUpdate(
     postId,
-    {
-      $push: { comments: comment._id },
-    },
+    { $push: { comments: comment._id } },
     { new: true }
   );
 
@@ -25,7 +18,7 @@ exports.createComment = catchAsync(async (req, res, next) => {
     status: "Success",
     message: "Comment Created",
     comment,
-    post,
+    updatedPost,
   });
 });
 
@@ -49,5 +42,45 @@ exports.getAllCommentsByPostId = catchAsync(async (req, res, next) => {
   return res.status(200).json({
     status: "Success",
     comments,
+  });
+});
+
+exports.updateComment = catchAsync(async (req, res, next) => {
+  const updatedComment = await Comment.findOneAndUpdate(
+    { _id: req.params.id, author: req.user._id },
+    req.body,
+    { new: true, runValidators: true }
+  );
+  if (!updatedComment) {
+    return next(
+      new AppError("No comment found for this user with this ID", 404)
+    );
+  }
+  res.status(200).json({
+    status: "success",
+    data: {
+      updatedComment,
+    },
+  });
+});
+
+exports.replyOnComment = catchAsync(async (req, res, next) => {
+  // const comment = await Comment.findById(req.params.id);
+  const reply = await Comment.create({
+    author: req.user.id,
+    postId: req.params.id,
+    // commentId: req.params.comId,
+    text: req.body.text,
+  });
+  await Comment.findByIdAndUpdate(
+    req.params.id,
+    { $push: { replyId: reply._id } },
+    { new: true }
+  );
+
+  return res.status(201).json({
+    Status: "Success",
+    Message: "Replied Successfully",
+    YourComment: reply,
   });
 });

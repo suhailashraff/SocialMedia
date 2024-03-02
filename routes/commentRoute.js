@@ -12,4 +12,8 @@ router.delete("/deletebyId/:commentId", commentController.deleteById);
 
 router.get("/CommentsbyPostId", commentController.getAllCommentsByPostId);
 
+router.patch("/updateComment/:id", commentController.updateComment);
+
+router.patch("/reply/:id", commentController.replyOnComment);
+
 module.exports = router;

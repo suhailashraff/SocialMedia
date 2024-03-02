@@ -4,32 +4,6 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const { signToken } = require("./authController");
 const sendEmail = require("../utils/email");
-const multer = require("multer");
-
-const multerStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/users");
-  },
-  filename: (req, file, cb) => {
-    const ext = file.mimetype.split("/")[1];
-    cb(null, `user-${req.user.id}-${Date.now()}.${ext}`);
-  },
-});
-
-const multerFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image")) {
-    cb(null, true);
-  } else {
-    cb(new AppError("not an image!please upload only images", 400), false);
-  }
-};
-
-const upload = multer({
-  storage: multerStorage,
-  fileFilter: multerFilter,
-});
-
-exports.uploadUserPhotos = upload.single("photo");
 
 const filterObj = (obj, ...allowedfields) => {
   const newObj = {};
@@ -50,7 +24,13 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 });
 
 exports.signup = catchAsync(async (req, res, next) => {
-  const newUser = await User.create({ ...req.body, photo: req.file.path });
+  let path;
+  if (req.file && req.file.path) {
+    path = req.file.path;
+  } else {
+    path = "default.jpg";
+  }
+  const newUser = await User.create({ ...req.body, photo: path });
 
   const token = signToken(newUser._id);
   const cookieOptions = {
