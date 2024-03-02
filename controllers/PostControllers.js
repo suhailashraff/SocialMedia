@@ -1,4 +1,7 @@
 const { validationResult } = require("express-validator");
+const fs = require("fs");
+const { promisify } = require("util");
+const unlinkAsync = promisify(fs.unlink);
 const Post = require("../models/PostModal");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
@@ -8,35 +11,51 @@ exports.createPost = catchAsync(async (req, res, next) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ status: "fail", errors: errors.array() });
   }
-  const { images, text } = req.body;
-  const authorId = req.user.id;
-  const newpost = await Post.create({
-    ...req.body,
-    author: authorId,
-    images: images,
-    text,
-  });
-  return res.status(201).json({
-    status: "success",
-    data: {
-      post: newpost,
-    },
-  });
+  let postBody = { ...req.body, author: req.user.id };
+  if (req.files) {
+    postBody = {
+      ...req.body,
+      author: req.user.id,
+      image: req.files.map((file) => file.path),
+    };
+  }
+  try {
+    const newPost = await Post.create(postBody);
+
+    return res.status(201).json({
+      status: "success",
+      data: {
+        post: newPost,
+      },
+    });
+  } catch (error) {
+    if (req.files) {
+      req.files.forEach(async (file) => {
+        await unlinkAsync(file.path);
+      });
+    }
+    return next(error);
+  }
 });
 
 exports.deletePost = catchAsync(async (req, res, next) => {
-  const deletedpost = await Post.findByIdAndDelete(req.params.id);
-  if (!deletedpost) {
+  const post = await Post.findById(req.params.id);
+  if (post.image) {
+    post.image.forEach(async (imagePath) => {
+      await unlinkAsync(imagePath);
+    });
+  }
+  await Post.findByIdAndDelete(req.params.id);
+  if (!post) {
     return res.status(404).json({
       status: "fail",
       message: "There is no Post related to this ID",
     });
   }
-  if (deletedpost.author === req.user.author)
-    return res.status(204).json({
-      status: "success",
-      message: "Post deleted Successfully",
-    });
+  return res.status(204).json({
+    status: "success",
+    message: "Post deleted Successfully",
+  });
 });
 
 exports.getAllPosts = catchAsync(async (req, res, next) => {
@@ -77,9 +96,17 @@ exports.getAllPosts = catchAsync(async (req, res, next) => {
 });
 
 exports.updatePost = catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ status: "fail", errors: errors.array() });
+  }
+  let postBody = req.body;
+  if (req.files) {
+    postBody = { ...req.body, image: req.files.map((file) => file.path) };
+  }
   const updatedPost = await Post.findOneAndUpdate(
     { _id: req.params.id, author: req.user.id },
-    req.body,
+    postBody,
     { new: true, runValidators: true }
   );
   if (!updatedPost) {

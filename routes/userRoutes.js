@@ -9,6 +9,8 @@ router.post(
   uploadUsingMulter.uploadUserPhotos,
   userController.signup
 );
+router.post("/verifyOtp/:otp", userController.verifyOtp);
+
 // router.get("/getAllUsers", userController.getAllUsers);
 router.get("/getuser", authController.protect, userController.getUser);
 router.patch("/updateUser", authController.protect, userController.updateUser);

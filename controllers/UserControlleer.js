@@ -23,35 +23,61 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
   });
 });
 
+let signupData;
+let otp;
+
 exports.signup = catchAsync(async (req, res, next) => {
-  let path;
-  if (req.file && req.file.path) {
-    path = req.file.path;
-  } else {
-    path = "default.jpg";
+  signupData = req.body;
+  if (req.file) {
+    signupData = { ...req.body, photo: req.file.path };
   }
-  const newUser = await User.create({ ...req.body, photo: path });
 
-  const token = signToken(newUser._id);
-  const cookieOptions = {
-    expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
-    ),
-    httpOnly: true,
-  };
+  // const newUser = new User.validate(req.body);
 
-  if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
-  res.cookie("jwt", token, cookieOptions);
+  otp = Math.floor(1000 + Math.random() * 9000).toString();
 
-  newUser.password = undefined;
-
+  const message = `your one time registration code is "${otp}"`;
+  await sendEmail({
+    email: req.body.email,
+    subject: "your otp is valid for 10 min",
+    message,
+  });
   res.status(201).json({
     status: "success",
-    token,
-    data: {
-      user: newUser,
-    },
+    message: "otp sent successfully",
   });
+});
+
+exports.verifyOtp = catchAsync(async (req, res, next) => {
+  if (req.params.otp === otp) {
+    const newUser = await User.create(signupData);
+
+    const token = signToken(newUser._id);
+    const cookieOptions = {
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      httpOnly: true,
+    };
+
+    if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+    res.cookie("jwt", token, cookieOptions);
+
+    newUser.password = undefined;
+
+    res.status(201).json({
+      status: "success",
+      token,
+      data: {
+        user: newUser,
+      },
+    });
+  } else {
+    res.status(201).json({
+      status: "success",
+      message: "otp mismatch",
+    });
+  }
 });
 
 exports.getUser = catchAsync(async (req, res, next) => {
@@ -74,7 +100,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     );
   }
   const filteredbody = filterObj(req.body, "name", "email", "address");
-  if (req.file) filteredbody.photo = req.file.filename;
+
   const user = await User.findByIdAndUpdate(req.user.id, filteredbody, {
     new: true,
     runValidators: true,
@@ -196,9 +222,8 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
-  //get user from collection
   const user = await User.findById(req.user.id).select("+password");
-  //check if posted password is correct
+
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
     return next(new AppError("incorrect password", 401));
   }
