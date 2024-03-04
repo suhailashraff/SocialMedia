@@ -4,11 +4,7 @@ const userController = require("../controllers/UserControlleer");
 const authController = require("../controllers/authController");
 const uploadUsingMulter = require("../utils/uploadUsingMulter");
 
-router.post(
-  "/signup",
-  uploadUsingMulter.uploadUserPhotos,
-  userController.signup
-);
+router.post("/signup", userController.signup);
 router.post("/verifyOtp/:otp", userController.verifyOtp);
 
 // router.get("/getAllUsers", userController.getAllUsers);
@@ -16,7 +12,7 @@ router.get("/getuser", authController.protect, userController.getUser);
 router.patch(
   "/updateUser",
   authController.protect,
-  uploadUsingMulter.uploadPostPhotos,
+  uploadUsingMulter.uploadUserPhotos,
   userController.updateUser
 );
 // router.get("/", Middlewares.requireLogin, userController.home);
@@ -29,6 +25,16 @@ router.patch(
   "/updatePassword",
   authController.protect,
   userController.updatePassword
+);
+router.post(
+  "/sendRequest/:id",
+  authController.protect,
+  userController.addFollowers
+);
+router.post(
+  "/acceptRequest/:id",
+  authController.protect,
+  userController.acceptRequest
 );
 
 module.exports = router;

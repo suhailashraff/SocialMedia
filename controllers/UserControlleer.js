@@ -1,4 +1,7 @@
 const User = require("../models/userModal");
+const fs = require("fs");
+const { promisify } = require("util");
+const unlinkAsync = promisify(fs.unlink);
 const crypto = require("crypto");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
@@ -29,89 +32,68 @@ let userData;
 let otp;
 
 exports.signup = catchAsync(async (req, res, next) => {
+  userData = req.body;
+  const newUser = new User(userData);
   try {
-    userData = req.body;
-    const newUser = new User(userData);
-    try {
-      await newUser.validate();
-    } catch (error) {
-      return res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
-    }
-    if (req.file) {
-      userData.photo = req.file.path;
-    }
-
-    const user = await User.findOne({ email: req.body.email });
-    if (user) {
-      return res.status(401).json({
-        status: "fail",
-        message: "User already exists with this email",
-      });
-    }
-
-    otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const message = `Your one time registration code is "${otp}"`;
-    await sendEmail({
-      email: req.body.email,
-      subject: "Your OTP is valid for 10 minutes",
-      message,
-    });
-
-    res.status(201).json({
-      status: "success",
-      message: "OTP sent successfully",
-    });
+    await newUser.validate();
   } catch (error) {
-    if (req.files) {
-      req.files.forEach(async (file) => {
-        await unlinkSync(file.path);
-      });
-    }
-    return next(error);
+    return res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
   }
+
+  const user = await User.findOne({ email: req.body.email });
+  if (user) {
+    return res.status(401).json({
+      status: "fail",
+      message: "User already exists with this email",
+    });
+  }
+
+  otp = Math.floor(1000 + Math.random() * 9000).toString();
+  const message = `Your one time registration code is "${otp}"`;
+  await sendEmail({
+    email: req.body.email,
+    subject: "Your OTP is valid for 10 minutes",
+    message,
+  });
+
+  res.status(201).json({
+    status: "success",
+    message: "OTP sent successfully",
+  });
 });
 
 exports.verifyOtp = catchAsync(async (req, res, next) => {
-  try {
-    if (req.params.otp === otp) {
-      const newUser = await User.create(userData);
+  if (req.params.otp === otp) {
+    const newUser = await User.create(userData);
 
-      const token = signToken(newUser._id);
-      const cookieOptions = {
-        expires: new Date(
-          Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
-        ),
-        httpOnly: true,
-      };
+    const token = signToken(newUser._id);
+    const cookieOptions = {
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      httpOnly: true,
+    };
 
-      if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
-      res.cookie("jwt", token, cookieOptions);
+    if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+    res.cookie("jwt", token, cookieOptions);
 
-      newUser.password = undefined;
+    newUser.password = undefined;
 
-      res.status(201).json({
-        status: "success",
-        token,
-        data: {
-          user: newUser,
-        },
-      });
-    } else {
-      res.status(201).json({
-        status: "Fail",
-        message: "otp mismatch",
-      });
-    }
-  } catch (error) {
-    if (req.files) {
-      req.files.forEach(async (file) => {
-        await unlinkAsync(file.path);
-      });
-    }
-    return next(error);
+    res.status(201).json({
+      status: "success",
+      token,
+      data: {
+        user: newUser,
+      },
+    });
+  } else {
+    res.status(201).json({
+      status: "Fail",
+      message: "otp mismatch",
+    });
   }
 });
 
@@ -142,6 +124,13 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "address",
     "isPublic"
   );
+  if (req.user.photo) {
+    await unlinkAsync(req.user.photo);
+  }
+
+  if (req.file) {
+    filteredbody.photo = req.file.path;
+  }
 
   const user = await User.findByIdAndUpdate(req.user.id, filteredbody, {
     new: true,
@@ -279,5 +268,48 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     token,
+  });
+});
+
+exports.addFollowers = catchAsync(async (req, res, next) => {
+  const newfollowing = await User.findById(req.params.id);
+  if (req.user.following.includes(newfollowing._id)) {
+    return res.status(400).send("Already following this user");
+  }
+  if (newfollowing.isPublic === false) {
+    await sendEmail({
+      email: newfollowing.email,
+      subject: `follow  request`,
+      message: `${req.user.name} has sent you follow  request click here to accept the request "${req.user._id}"`,
+    });
+  } else {
+    await User.findByIdAndUpdate(
+      req.user.id,
+      { $push: { following: req.params.id } },
+      { new: true }
+    );
+    await User.findByIdAndUpdate(
+      req.params.id,
+      { $push: { followers: req.user.id } },
+      { new: true }
+    );
+  }
+  res.status(200).json({
+    status: "success",
+  });
+});
+exports.acceptRequest = catchAsync(async (req, res, next) => {
+  await User.findByIdAndUpdate(
+    req.user.id,
+    { $push: { followers: req.params.id } },
+    { new: true }
+  );
+  await User.findByIdAndUpdate(
+    req.params.id,
+    { $push: { following: req.user.id } },
+    { new: true }
+  );
+  res.status(200).json({
+    status: "success",
   });
 });

@@ -62,8 +62,9 @@ exports.deletePost = catchAsync(async (req, res, next) => {
 exports.getAllPosts = catchAsync(async (req, res, next) => {
   const userWithPublicAccount = await User.find({ isPublic: true });
   const publicUserIds = userWithPublicAccount.map((user) => user._id);
+  const allUserIds = [...publicUserIds, ...req.user.followers];
 
-  const allPosts = await Post.find({ author: { $in: publicUserIds } })
+  const allPosts = await Post.find({ author: { $in: allUserIds } })
     .populate({
       path: "author",
       select: "name", // Exclude _id field for the author
