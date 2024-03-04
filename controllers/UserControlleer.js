@@ -92,7 +92,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
   } else {
     res.status(201).json({
       status: "Fail",
-      message: "otp mismatch",
+      message: "otp mismatchh",
     });
   }
 });
