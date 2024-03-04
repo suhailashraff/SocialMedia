@@ -1,4 +1,7 @@
 const User = require("../models/userModal");
+const fs = require("fs");
+const { promisify } = require("util");
+const unlinkAsync = promisify(fs.unlink);
 const crypto = require("crypto");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
@@ -37,9 +40,6 @@ exports.signup = catchAsync(async (req, res, next) => {
       status: "fail",
       message: error.message,
     });
-  }
-  if (req.file) {
-    userData.photo = req.file.path;
   }
 
   const user = await User.findOne({ email: req.body.email });
@@ -122,6 +122,13 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "address",
     "isPublic"
   );
+  if (req.user.photo) {
+    await unlinkAsync(req.user.photo);
+  }
+
+  if (req.file) {
+    filteredbody.photo = req.file.path;
+  }
 
   const user = await User.findByIdAndUpdate(req.user.id, filteredbody, {
     new: true,
@@ -259,5 +266,48 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     token,
+  });
+});
+
+exports.addFollowers = catchAsync(async (req, res, next) => {
+  const newfollowing = await User.findById(req.params.id);
+  if (req.user.following.includes(newfollowing._id)) {
+    return res.status(400).send("Already following this user");
+  }
+  if (newfollowing.isPublic === false) {
+    await sendEmail({
+      email: newfollowing.email,
+      subject: `follow  request`,
+      message: `${req.user.name} has sent you follow  request click here to accept the request "${req.user._id}"`,
+    });
+  } else {
+    await User.findByIdAndUpdate(
+      req.user.id,
+      { $push: { following: req.params.id } },
+      { new: true }
+    );
+    await User.findByIdAndUpdate(
+      req.params.id,
+      { $push: { followers: req.user.id } },
+      { new: true }
+    );
+  }
+  res.status(200).json({
+    status: "success",
+  });
+});
+exports.acceptRequest = catchAsync(async (req, res, next) => {
+  await User.findByIdAndUpdate(
+    req.user.id,
+    { $push: { followers: req.params.id } },
+    { new: true }
+  );
+  await User.findByIdAndUpdate(
+    req.params.id,
+    { $push: { following: req.user.id } },
+    { new: true }
+  );
+  res.status(200).json({
+    status: "success",
   });
 });
