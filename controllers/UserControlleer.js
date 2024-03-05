@@ -7,7 +7,6 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const { signToken } = require("./authController");
 const sendEmail = require("../utils/email");
-const { unlinkSync } = require("fs");
 
 const filterObj = (obj, ...allowedfields) => {
   const newObj = {};
