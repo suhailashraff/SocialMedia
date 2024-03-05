@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon app.js"
+    "start": "node dist/bundle.js",
+    "build": "webpack --config webpack.config.js"
   },
   "author": "Suhail Ashraf",
   "license": "ISC",
@@ -23,5 +24,12 @@
     "twilio": "^4.23.0",
     "twilio-express": "^1.0.5",
     "validator": "^13.11.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "babel-loader": "^9.1.3",
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4"
   }
 }

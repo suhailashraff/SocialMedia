@@ -6,6 +6,7 @@ const Post = require("../models/PostModal");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const User = require("../models/userModal");
+const Comment = require("../models/commentModal");
 
 exports.createPost = catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
@@ -40,19 +41,25 @@ exports.createPost = catchAsync(async (req, res, next) => {
 });
 
 exports.deletePost = catchAsync(async (req, res, next) => {
-  const post = await Post.findById(req.params.id);
-  if (post.image) {
-    post.image.forEach(async (imagePath) => {
-      await unlinkAsync(imagePath);
-    });
-  }
-  await Post.findByIdAndDelete(req.params.id);
-  if (!post) {
+  const deletedPost = await Post.findByIdAndDelete(req.params.id);
+  if (!deletedPost) {
     return res.status(404).json({
       status: "fail",
       message: "There is no Post related to this ID",
     });
   }
+  deletedPost.image.forEach((photo) => {
+    if (fs.existsSync(photo)) {
+      fs.unlinkSync(photo);
+    }
+  });
+  const deletedComment = await Comment.find({
+    _id: { $in: deletedPost.comments },
+  });
+  await Comment.deleteMany({ _id: { $in: deletedPost.comments } });
+  const replyIds = deletedComment.flatMap((comment) => comment.replyId);
+  await Comment.deleteMany({ _id: { $in: replyIds } });
+
   return res.status(204).json({
     status: "success",
     message: "Post deleted Successfully",
