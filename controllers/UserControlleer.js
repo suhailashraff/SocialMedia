@@ -7,7 +7,6 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const { signToken } = require("./authController");
 const sendEmail = require("../utils/email");
-const { unlinkSync } = require("fs");
 
 const filterObj = (obj, ...allowedfields) => {
   const newObj = {};
@@ -92,7 +91,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
   } else {
     res.status(201).json({
       status: "Fail",
-      message: "otp mismatch",
+      message: "otp mismatchh",
     });
   }
 });

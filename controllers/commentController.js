@@ -24,10 +24,16 @@ exports.createComment = catchAsync(async (req, res, next) => {
 
 exports.deleteById = catchAsync(async (req, res, next) => {
   const commentId = req.params.commentId;
+
   const deletedComment = await Comment.findByIdAndDelete(commentId);
   if (!deletedComment) {
     return next(new AppError("No comment found with that ID", 404));
   }
+  await Post.updateMany(
+    { comments: commentId },
+    { $pull: { comments: commentId } }
+  );
+  await Comment.deleteMany({ _id: { $in: deletedComment.replyId } });
 
   return res.status(204).json({
     status: "Success",
