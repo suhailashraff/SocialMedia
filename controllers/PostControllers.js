@@ -153,22 +153,28 @@ exports.getMyPosts = catchAsync(async (req, res, next) => {
 
 exports.likePost = catchAsync(async (req, res, next) => {
   const postId = req.params.id;
-  console.log(postId);
   const post = await Post.findById(postId);
 
   if (!post) {
     return next(new AppError("No Post found with this PostID", 404));
   }
+  const userIdString = req.params.id.toString();
 
-  if (post.likes.includes(req.user.id.toString())) {
-    return next(new AppError("You have already liked this post", 400));
+  if (post.likes.includes(userIdString)) {
+    post.likes.pull(userIdString);
+    await post.save();
+
+    return res.status(201).json({
+      status: "Success",
+      message: "like Uncheck",
+    });
   }
 
-  if (post.dislikes.includes(req.user.id.toString())) {
-    post.dislikes.pull(req.user.id);
-    post.likes.push(req.user.id);
+  if (post.dislikes.includes(userIdString)) {
+    post.dislikes.pull(userIdString);
+    post.likes.push(userIdString);
   } else {
-    post.likes.push(req.user.id);
+    post.likes.push(userIdString);
   }
 
   await post.save();
@@ -181,29 +187,33 @@ exports.likePost = catchAsync(async (req, res, next) => {
 
 exports.dislikePost = catchAsync(async (req, res, next) => {
   const postId = req.params.id;
-  console.log(postId);
-
   const post = await Post.findById(postId);
 
   if (!post) {
     return next(new AppError("No Post found with this PostID", 404));
   }
+  const userIdString = req.params.id.toString();
 
-  if (post.dislikes.includes(req.user.id.toString())) {
-    return next(new AppError("You have already disliked this post", 400));
+  if (post.dislikes.includes(userIdString)) {
+    post.dislikes.pull(userIdString);
+    await post.save();
+    return res.status(201).json({
+      status: "Success",
+      message: "dislike Uncheck",
+    });
   }
 
-  if (post.likes.includes(req.user.id.toString())) {
-    post.likes.pull(req.user.id);
-    post.dislikes.push(req.user.id);
+  if (post.likes.includes(userIdString)) {
+    post.likes.pull(userIdString);
+    post.dislikes.push(userIdString);
   } else {
-    post.dislikes.push(req.user.id);
+    post.dislikes.push(userIdString);
   }
 
   await post.save();
 
   return res.status(200).json({
     status: "Success",
-    message: "Post Disliked 🤦‍♂️",
+    message: "Post Disliked 👎",
   });
 });
