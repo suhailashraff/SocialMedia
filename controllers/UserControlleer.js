@@ -31,6 +31,9 @@ let userData;
 let otp;
 
 exports.signup = catchAsync(async (req, res, next) => {
+  if (req.body.role === "admin") {
+    return next(new AppError("Your are not supposed to signup as Admin", 400));
+  }
   userData = req.body;
   const newUser = new User(userData);
   try {
