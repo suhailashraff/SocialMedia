@@ -41,7 +41,19 @@ exports.createPost = catchAsync(async (req, res, next) => {
 });
 
 exports.deletePost = catchAsync(async (req, res, next) => {
-  const deletedPost = await Post.findByIdAndDelete(req.params.id);
+  let deletedPost;
+  if (req.user.role === "user") {
+    deletedPost = await Post.findOneAndDelete({
+      _id: req.params.id,
+      author: req.user.id,
+    });
+  }
+  if (req.user.role === "admin") {
+    deletedPost = await Post.findOneAndDelete({
+      _id: req.params.id,
+    });
+  }
+
   if (!deletedPost) {
     return res.status(404).json({
       status: "fail",
@@ -67,37 +79,42 @@ exports.deletePost = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllPosts = catchAsync(async (req, res, next) => {
-  const userWithPublicAccount = await User.find({ isPublic: true });
-  const publicUserIds = userWithPublicAccount.map((user) => user._id);
-  const allUserIds = [...publicUserIds, ...req.user.followers];
+  let allPosts;
+  if (req.user.role === "user") {
+    const userWithPublicAccount = await User.find({ isPublic: true });
+    const publicUserIds = userWithPublicAccount.map((user) => user._id);
+    const allUserIds = [...publicUserIds, ...req.user.followers];
 
-  const allPosts = await Post.find({ author: { $in: allUserIds } })
-    .populate({
-      path: "author",
-      select: "name", // Exclude _id field for the author
-    })
-    .populate({
-      path: "likes",
-      select: "name", // Select only the username of users who liked the post
-    })
-    .populate({
-      path: "comments",
-      select: "text createdAt author replyId", // Select only the text, createdAt, and author fields of comments
-      populate: {
+    allPosts = await Post.find({ author: { $in: allUserIds } })
+      .populate({
         path: "author",
-        select: "name", // Exclude _id field for comment authors
-      },
-      populate: {
-        path: "replyId",
-        select: "-_id text author",
+        select: "name", // Exclude _id field for the author
+      })
+      .populate({
+        path: "likes",
+        select: "name", // Select only the username of users who liked the post
+      })
+      .populate({
+        path: "comments",
+        select: "text createdAt author replyId", // Select only the text, createdAt, and author fields of comments
         populate: {
           path: "author",
-          select: "-_id name",
+          select: "name", // Exclude _id field for comment authors
         },
-      },
-    })
-    .select("text likes dislikes comments"); // Exclude _id field from the query results
-
+        populate: {
+          path: "replyId",
+          select: "-_id text author",
+          populate: {
+            path: "author",
+            select: "-_id name",
+          },
+        },
+      })
+      .select("text likes dislikes comments"); // Exclude _id field from the query results
+  }
+  if (req.user.role === "admin") {
+    allPosts = await Post.find();
+  }
   if (allPosts.length < 1) {
     return next(new AppError("There are no posts yet...", 404));
   }
